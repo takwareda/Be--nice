@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be Nice | Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" href="WhatsApp Image 2026-01-16 at 5.53.25 PM.jpeg" type="image/x-icon">
+
+    <style>
+        :root { --sage: #8FB090; --cream: #FDFCF0; }
+        body { background-color: var(--cream); font-family: 'Segoe UI', sans-serif; padding: 20px 0; } /* تقليل الـ padding للموبايل */
+        .admin-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-width: 850px; margin: auto; }
+        .btn-back { color: var(--sage); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 20px; border: 1.5px solid var(--sage); padding: 5px 15px; border-radius: 50px; transition: 0.3s; font-size: 14px; }
+        .btn-back:hover { background: var(--sage); color: white; }
+        .btn-update { background: var(--sage); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; margin-top: 15px; }
+        .preview-box { width: 100%; height: 100px; border: 1px dashed #ccc; border-radius: 8px; margin-top: 5px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fdfdfd; }
+        .preview-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        .product-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; }
+        .product-item img { width: 45px; height: 45px; border-radius: 5px; object-fit: cover; }
+        
+        /* تحسين استجابة الصور في الموبايل */
+        @media (max-width: 768px) {
+            .col-4 { width: 33.33%; }
+            .admin-card { padding: 15px; margin: 0 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid"> <div class="container">
+        <a href="index.html" class="btn-back">← Back to Store</a>
+        <div class="admin-card">
+            <h2 class="text-center mb-4" style="font-size: 1.5rem;">Add New Product Object</h2>
+            <form id="productForm">
+                <label class="fw-bold small">Select Category</label>
+                <select id="pCategory" class="form-select mb-3" required>
+                    <option value="shoesGrid">Shoes Collection</option>
+                    <option value="clothGrid">Cloth Collection</option>
+                    <option value="homeWearGrid">Home Wear Collection</option>
+                </select>
+
+                <div class="row">
+                    <div class="col-md-6"><label class="small fw-bold">Name</label><input type="text" id="pName" class="form-control mb-3" placeholder="Product Name" required></div>
+                    <div class="col-md-6"><label class="small fw-bold">Price (EGP)</label><input type="number" id="pPrice" class="form-control mb-3" placeholder="Price" required></div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3"> <label class="small fw-bold text-success">Main Image (Home Card)</label>
+                        <input type="file" id="mainFile" class="form-control mb-2" accept="image/*" required>
+                        <div class="preview-box"><img id="prevMain"></div>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="small fw-bold">Slider Images (3 Photos)</label>
+                        <div class="row g-2">
+                            <div class="col-4"><input type="file" id="f1" class="form-control form-control-sm" accept="image/*" required><div class="preview-box"><img id="prev1"></div></div>
+                            <div class="col-4"><input type="file" id="f2" class="form-control form-control-sm" accept="image/*" required><div class="preview-box"><img id="prev2"></div></div>
+                            <div class="col-4"><input type="file" id="f3" class="form-control form-control-sm" accept="image/*" required><div class="preview-box"><img id="prev3"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6"><label class="small fw-bold">Sizes</label><input type="text" id="pSizes" class="form-control mb-3" placeholder="e.g. S, M, L / 37-42" required></div>
+                    <div class="col-md-6"><label class="small fw-bold">Colours</label><input type="text" id="pColours" class="form-control mb-3" placeholder="e.g. Black, White" required></div>
+                </div>
+
+                <label class="small fw-bold">Description</label>
+                <textarea id="pDesc" class="form-control mb-3" rows="2" placeholder="Product description..." required></textarea>
+                
+                <button type="submit" class="btn-update">UPDATE COLLECTION</button>
+            </form>
+
+            <div class="mt-5 pt-3 border-top">
+                <h5 class="mb-3">Manage Current Items</h5>
+                <div id="itemList"></div>
+                <button onclick="if(confirm('Are you sure? This will delete everything!')){localStorage.removeItem('beNiceDB'); location.reload();}" class="btn btn-sm btn-outline-danger mt-4 w-100">Delete All Products</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let mainImgData = ""; let slidersData = ["", "", ""];
+    
+    function compress(file, callback) {
+        const reader = new FileReader(); 
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image(); 
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas'); 
+                const ctx = canvas.getContext('2d');
+                canvas.width = 500; 
+                canvas.height = (img.height/img.width)*500;
+                ctx.drawImage(img, 0, 0, 500, canvas.height);
+                callback(canvas.toDataURL('image/jpeg', 0.6));
+            };
+        };
+    }
+
+    document.getElementById('mainFile').onchange = (e) => compress(e.target.files[0], (d) => { mainImgData = d; document.getElementById('prevMain').src = d; document.getElementById('prevMain').style.display="block"; });
+    document.getElementById('f1').onchange = (e) => compress(e.target.files[0], (d) => { slidersData[0] = d; document.getElementById('prev1').src = d; document.getElementById('prev1').style.display="block"; });
+    document.getElementById('f2').onchange = (e) => compress(e.target.files[0], (d) => { slidersData[1] = d; document.getElementById('prev2').src = d; document.getElementById('prev2').style.display="block"; });
+    document.getElementById('f3').onchange = (e) => compress(e.target.files[0], (d) => { slidersData[2] = d; document.getElementById('prev3').src = d; document.getElementById('prev3').style.display="block"; });
+
+    document.getElementById('productForm').onsubmit = (e) => {
+        e.preventDefault();
+        const db = JSON.parse(localStorage.getItem('beNiceDB')) || [];
+        db.push({ 
+            id: Date.now(), 
+            category: document.getElementById('pCategory').value, 
+            name: document.getElementById('pName').value, 
+            price: document.getElementById('pPrice').value, 
+            mainImg: mainImgData, 
+            imgList: slidersData, 
+            sizes: document.getElementById('pSizes').value, 
+            colours: document.getElementById('pColours').value, 
+            desc: document.getElementById('pDesc').value 
+        });
+        try { 
+            localStorage.setItem('beNiceDB', JSON.stringify(db)); 
+            alert("Added Successfully!");
+            location.reload(); 
+        } catch(e) { 
+            alert("Storage full! Please delete some old products."); 
+        }
+    };
+
+    const list = document.getElementById('itemList');
+    (JSON.parse(localStorage.getItem('beNiceDB')) || []).forEach((item, i) => {
+        list.innerHTML += `
+            <div class="product-item">
+                <span><img src="${item.mainImg}"> ${item.name} <small class="text-muted" style="font-size: 10px;">(${item.category})</small></span>
+                <button class="btn btn-sm text-danger" onclick="deleteItem(${i})">Remove</button>
+            </div>`;
+    });
+    
+    function deleteItem(i) { 
+        let db = JSON.parse(localStorage.getItem('beNiceDB')); 
+        db.splice(i,1); 
+        localStorage.setItem('beNiceDB', JSON.stringify(db)); 
+        location.reload(); 
+    }
+</script>
+</body>
+</html>
