@@ -88,8 +88,8 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // 1. وظيفة الدخول للآدمن
     function enterAdmin() {
         const pass = prompt("Enter Admin Password:");
         if (pass === "279201200") {
@@ -99,111 +99,96 @@
         }
     }
 
-    // 2. وظيفة عرض المنتج عند الضغط عليه (مع التشفير لحماية الروابط)
     function viewProduct(encodedData) {
         localStorage.setItem('selectedProduct', decodeURIComponent(encodedData));
         window.location.href = 'product-detail.html';
     }
 
-    // 3. وظيفة بناء كروت المنتجات العادية
-    function renderProductCard(p) {
-        const safeData = encodeURIComponent(JSON.stringify(p));
-        const cardHTML = `
-            <div class="col">
-                <div class="card h-100 shadow-sm" onclick="viewProduct('${safeData}')">
-                    <img src="${p.mainImg}" class="card-img-top shadow-sm" onerror="this.src='https://placehold.co/400x600?text=Image+Error'">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 16px;">${p.name}</h5>
-                        <p class="card-price" style="font-size: 14px;">${p.price} EGP</p>
-                    </div>
-                </div>
-            </div>`;
-        const targetGrid = document.getElementById(p.category);
-        if (targetGrid) { targetGrid.innerHTML += cardHTML; }
-    }
-
-    // 4. وظيفة بناء كروت العروض (مع حساب نسبة الخصم والسعر المشطوب)
     function renderOfferCard(p) {
         const safeData = encodeURIComponent(JSON.stringify(p));
-        
-        // حساب نسبة الخصم تلقائياً
-        let discountBadge = "";
+        let discountTag = "";
         if (p.oldPrice && p.price) {
-            const oldP = parseFloat(p.oldPrice);
-            const newP = parseFloat(p.price);
-            if (oldP > newP) {
-                const percentage = Math.round(((oldP - newP) / oldP) * 100);
-                discountBadge = `<span class="badge bg-danger position-absolute m-2" style="top:0; left:0; z-index:2;">-${percentage}% OFF</span>`;
-            }
+            const disc = Math.round(((parseFloat(p.oldPrice) - parseFloat(p.price)) / parseFloat(p.oldPrice)) * 100);
+            if (disc > 0) discountTag = `<div class="discount-badge" style="position:absolute; top:15px; left:15px; background:#d9534f; color:white; padding:5px 10px; border-radius:8px; font-weight:bold; z-index:10;">-${disc}%</div>`;
         }
 
         const cardHTML = `
             <div class="col">
-                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden" onclick="viewProduct('${safeData}')">
-                    ${discountBadge}
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative" onclick="viewProduct('${safeData}')">
+                    ${discountTag}
                     <img src="${p.mainImg}" class="card-img-top" style="height:350px; object-fit:cover;" onerror="this.src='https://placehold.co/400x600?text=Image+Error'">
                     <div class="card-body text-center p-3">
-                        <h6 class="card-title text-truncate">${p.name}</h6>
-                        <div class="d-flex justify-content-center align-items-center gap-2">
-                            <span class="text-decoration-line-through text-muted small">${p.oldPrice} EGP</span>
+                        <h6 class="card-title text-truncate" style="font-size: 1.1rem; margin-bottom: 8px;">${p.name}</h6>
+                        <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                            <span class="text-decoration-line-through text-muted small" style="font-size: 0.9rem;">${p.oldPrice} EGP</span>
                             <span class="fw-bold text-danger" style="font-size: 1.1rem;">${p.price} EGP</span>
+                        </div>
+                        <div style="font-size: 13px; color: #777; margin-top: 5px;">
+                            ${p.sizes ? '<span style="display: block;">Sizes: ' + p.sizes + '</span>' : ''}
                         </div>
                     </div>
                 </div>
             </div>`;
-        const targetGrid = document.getElementById('salesGrid');
-        if (targetGrid) { targetGrid.innerHTML += cardHTML; }
+        document.getElementById('salesGrid').innerHTML += cardHTML;
     }
 
-    // 5. تحميل البيانات عند فتح الصفحة
+    function renderProductCard(p) {
+        const safeData = encodeURIComponent(JSON.stringify(p));
+        const cardHTML = `
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden" onclick="viewProduct('${safeData}')">
+                    <img src="${p.mainImg}" class="card-img-top" style="height:350px; object-fit:cover;" onerror="this.src='https://placehold.co/400x600?text=Image+Error'">
+                    <div class="card-body text-center p-3">
+                        <h6 class="card-title text-truncate" style="font-size: 1.1rem; margin-bottom: 8px;">${p.name}</h6>
+                        <p class="fw-bold text-dark" style="font-size: 1.1rem; margin-bottom: 5px;">${p.price} EGP</p>
+                        <div style="font-size: 13px; color: #777; margin-top: 5px;">
+                            ${p.sizes ? '<span style="display: block;">Sizes: ' + p.sizes + '</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        const grid = document.getElementById(p.category);
+        if (grid) grid.innerHTML += cardHTML;
+    }
+
     window.onload = () => {
-        // --- ضع روابط الـ CSV هنا ---
-        const mainSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRvOH11OPeKIcfNKO4UsVzpvM3q8emqa4KwUOeI4jRcuNjIoLPoxJSSppEf9ULR68vyiRvA__Vr2QPS/pub?output=csv";
-        const offersSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMuQr2eQNIqLqFa2Cm_wrGOGGmkO2ehYhicvQx3rNlPjIXk8SDGJA5dvBDts5DIZqexYM2gW_OPMcQ/pub?output=csv"; // استبدل هذا برابط جدول العروض الجديد
+        const mainSheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRvOH11OPeKIcfNKO4UsVzpvM3q8emqa4KwUOeI4jRcuNjIoLPoxJSSppEf9ULR68vyiRvA__Vr2QPS/pub?output=csv";
+        const offerSheet = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMuQr2eQNIqLqFa2Cm_wrGOGGmkO2ehYhicvQx3rNlPjIXk8SDGJA5dvBDts5DIZqexYM2gW_OPMcQ/pub?output=csv";
 
-        // أولاً: تحميل العروض من الجدول الخاص بها
-        fetch(offersSheetUrl)
-            .then(res => res.text())
-            .then(csv => {
-                const rows = csv.split(/\r?\n/).slice(1);
-                rows.forEach(row => {
-                    const cols = row.split(',');
-                    if(cols.length >= 4 && cols[0].trim() !== "") {
-                        renderOfferCard({
-                            category: "salesGrid",
-                            name: cols[1].trim(),
-                            price: cols[2].trim(), // السعر الجديد
-                            oldPrice: cols[3].trim(), // السعر القديم
-                            mainImg: cols[4].trim(), // رابط الصورة
-                            desc: cols[5] ? cols[5].trim() : "",
-                            imgList: [cols[4].trim()]
-                        });
-                    }
-                });
-            }).catch(err => console.error("Offers sheet error:", err));
+        fetch(offerSheet).then(r => r.text()).then(data => {
+            data.split(/\r?\n/).slice(1).forEach(row => {
+                const c = row.split(',');
+                if (c.length >= 5 && c[0].trim() !== "") {
+                    renderOfferCard({ 
+                        category: "salesGrid", 
+                        name: c[1], 
+                        price: c[2], 
+                        oldPrice: c[3], 
+                        mainImg: c[4], 
+                        sizes: c[5] ? c[5].trim() : "", 
+                        colours: c[6] ? c[6].trim() : "", 
+                        desc: c[7] ? c[7].trim() : "" 
+                    });
+                }
+            });
+        });
 
-        // ثانياً: تحميل المنتجات العادية
-        fetch(mainSheetUrl)
-            .then(res => res.text())
-            .then(csv => {
-                const rows = csv.split(/\r?\n/).slice(1);
-                rows.forEach(row => {
-                    const cols = row.split(',');
-                    if (cols.length >= 4 && cols[0].trim() !== "" && cols[0].trim() !== "salesGrid") {
-                        const product = {
-                            category: cols[0].trim(),
-                            name: cols[1].trim(),
-                            price: cols[2].trim(),
-                            mainImg: cols[3].trim(),
-                            sizes: cols[4] ? cols[4].trim() : "",
-                            colours: cols[5] ? cols[5].trim() : "",
-                            desc: cols[6] ? cols[6].trim() : "",
-                            imgList: [cols[3].trim()]
-                        };
-                        renderProductCard(product);
-                    }
-                });
-            }).catch(err => console.error("Main sheet error:", err));
+        fetch(mainSheet).then(r => r.text()).then(data => {
+            data.split(/\r?\n/).slice(1).forEach(row => {
+                const c = row.split(',');
+                if (c.length >= 4 && c[0].trim() !== "" && c[0].trim() !== "salesGrid") {
+                    renderProductCard({ 
+                        category: c[0].trim(), 
+                        name: c[1].trim(), 
+                        price: c[2].trim(), 
+                        mainImg: c[3].trim(), 
+                        sizes: c[4] ? c[4].trim() : "", 
+                        colours: c[5] ? c[5].trim() : "", 
+                        desc: c[6] ? c[6].trim() : "" 
+                    });
+                }
+            });
+        });
     };
 </script>
 <div id="about-section" class="container-fluid py-5 mt-5" style="background-color: #fff; border-top: 2px solid var(--olive);">
