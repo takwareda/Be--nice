@@ -47,8 +47,8 @@
         <a class="navbar-brand" href="#"><span style="background:white; color:var(--olive); padding:0px 8px; border-radius:5px;">N</span> Be Nice</a>
         <div class="navbar-nav d-none d-lg-flex mx-auto">
             <a class="nav-link" href="#">Home</a>
-            <a class="nav-link" href="#">Sales</a>
-            <a class="nav-link" href="#">About</a>
+            <a class="nav-link" href="#offers-section">Offers</a>
+            <a class="nav-link" href="#about-section">About</a>
         </div>
         <a href="javascript:void(0)" onclick="enterAdmin()" class="admin-plus">+</a>
     </div>
@@ -72,9 +72,17 @@
         <p>Explore our new collection with low prices</p>
     </div>
     <div id="homeWearGrid" class="row row-cols-2 row-cols-md-3 g-3 g-md-4"></div>
+    <div id="offers-section" class="container pb-5">
+    <div class="section-header">
+        <h2 style="color: #d9534f; font-weight: bold;">Special Offers %</h2>
+        <p>Grab your favorites with special prices!</p>
+    </div>
+    <div id="salesGrid" class="row row-cols-2 row-cols-md-3 g-3 g-md-4"></div>
+
 </div>
 
 <script>
+    // 1. وظيفة الدخول للآدمن
     function enterAdmin() {
         const pass = prompt("Enter Admin Password:");
         if (pass === "279201200") {
@@ -84,20 +92,18 @@
         }
     }
 
-    // تم تعديل هذه الوظيفة لتجنب أخطاء الفواصل في الروابط
+    // 2. وظيفة عرض المنتج عند الضغط عليه (مع التشفير لحماية الروابط)
     function viewProduct(encodedData) {
-        const decodedData = decodeURIComponent(encodedData);
-        localStorage.setItem('selectedProduct', decodedData);
+        localStorage.setItem('selectedProduct', decodeURIComponent(encodedData));
         window.location.href = 'product-detail.html';
     }
 
+    // 3. وظيفة بناء كروت المنتجات العادية
     function renderProductCard(p) {
-        // تحويل البيانات لتعمل بأمان عند الضغط على المنتج
         const safeData = encodeURIComponent(JSON.stringify(p));
-        
         const cardHTML = `
             <div class="col">
-                <div class="card h-100" onclick="viewProduct('${safeData}')">
+                <div class="card h-100 shadow-sm" onclick="viewProduct('${safeData}')">
                     <img src="${p.mainImg}" class="card-img-top shadow-sm" onerror="this.src='https://placehold.co/400x600?text=Image+Error'">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 16px;">${p.name}</h5>
@@ -105,25 +111,78 @@
                     </div>
                 </div>
             </div>`;
-
         const targetGrid = document.getElementById(p.category);
-        if (targetGrid) {
-            targetGrid.innerHTML += cardHTML;
-        }
+        if (targetGrid) { targetGrid.innerHTML += cardHTML; }
     }
 
-    window.onload = () => {
-        const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRvOH11OPeKIcfNKO4UsVzpvM3q8emqa4KwUOeI4jRcuNjIoLPoxJSSppEf9ULR68vyiRvA__Vr2QPS/pub?output=csv";
+    // 4. وظيفة بناء كروت العروض (مع حساب نسبة الخصم والسعر المشطوب)
+    function renderOfferCard(p) {
+        const safeData = encodeURIComponent(JSON.stringify(p));
+        
+        // حساب نسبة الخصم تلقائياً
+        let discountBadge = "";
+        if (p.oldPrice && p.price) {
+            const oldP = parseFloat(p.oldPrice);
+            const newP = parseFloat(p.price);
+            if (oldP > newP) {
+                const percentage = Math.round(((oldP - newP) / oldP) * 100);
+                discountBadge = `<span class="badge bg-danger position-absolute m-2" style="top:0; left:0; z-index:2;">-${percentage}% OFF</span>`;
+            }
+        }
 
-        fetch(sheetUrl)
-            .then(response => response.text())
-            .then(csvData => {
-                // تقسيم البيانات مع مراعاة الأسطر الفارغة
-                const rows = csvData.split(/\r?\n/).slice(1);
-                
+        const cardHTML = `
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden" onclick="viewProduct('${safeData}')">
+                    ${discountBadge}
+                    <img src="${p.mainImg}" class="card-img-top" style="height:350px; object-fit:cover;" onerror="this.src='https://placehold.co/400x600?text=Image+Error'">
+                    <div class="card-body text-center p-3">
+                        <h6 class="card-title text-truncate">${p.name}</h6>
+                        <div class="d-flex justify-content-center align-items-center gap-2">
+                            <span class="text-decoration-line-through text-muted small">${p.oldPrice} EGP</span>
+                            <span class="fw-bold text-danger" style="font-size: 1.1rem;">${p.price} EGP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        const targetGrid = document.getElementById('salesGrid');
+        if (targetGrid) { targetGrid.innerHTML += cardHTML; }
+    }
+
+    // 5. تحميل البيانات عند فتح الصفحة
+    window.onload = () => {
+        // --- ضع روابط الـ CSV هنا ---
+        const mainSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRvOH11OPeKIcfNKO4UsVzpvM3q8emqa4KwUOeI4jRcuNjIoLPoxJSSppEf9ULR68vyiRvA__Vr2QPS/pub?output=csv";
+        const offersSheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTMuQr2eQNIqLqFa2Cm_wrGOGGmkO2ehYhicvQx3rNlPjIXk8SDGJA5dvBDts5DIZqexYM2gW_OPMcQ/pub?output=csv"; // استبدل هذا برابط جدول العروض الجديد
+
+        // أولاً: تحميل العروض من الجدول الخاص بها
+        fetch(offersSheetUrl)
+            .then(res => res.text())
+            .then(csv => {
+                const rows = csv.split(/\r?\n/).slice(1);
                 rows.forEach(row => {
                     const cols = row.split(',');
-                    if (cols.length >= 4 && cols[0].trim() !== "") {
+                    if(cols.length >= 4 && cols[0].trim() !== "") {
+                        renderOfferCard({
+                            category: "salesGrid",
+                            name: cols[1].trim(),
+                            price: cols[2].trim(), // السعر الجديد
+                            oldPrice: cols[3].trim(), // السعر القديم
+                            mainImg: cols[4].trim(), // رابط الصورة
+                            desc: cols[5] ? cols[5].trim() : "",
+                            imgList: [cols[4].trim()]
+                        });
+                    }
+                });
+            }).catch(err => console.error("Offers sheet error:", err));
+
+        // ثانياً: تحميل المنتجات العادية
+        fetch(mainSheetUrl)
+            .then(res => res.text())
+            .then(csv => {
+                const rows = csv.split(/\r?\n/).slice(1);
+                rows.forEach(row => {
+                    const cols = row.split(',');
+                    if (cols.length >= 4 && cols[0].trim() !== "" && cols[0].trim() !== "salesGrid") {
                         const product = {
                             category: cols[0].trim(),
                             name: cols[1].trim(),
@@ -132,14 +191,61 @@
                             sizes: cols[4] ? cols[4].trim() : "",
                             colours: cols[5] ? cols[5].trim() : "",
                             desc: cols[6] ? cols[6].trim() : "",
-                            imgList: [cols[3].trim()] 
+                            imgList: [cols[3].trim()]
                         };
                         renderProductCard(product);
                     }
                 });
-            })
-            .catch(error => console.error("Error loading products:", error));
+            }).catch(err => console.error("Main sheet error:", err));
     };
 </script>
+<div id="about-section" class="container-fluid py-5 mt-5" style="background-color: #fff; border-top: 2px solid var(--olive);">
+    <div class="container">
+        <div class="section-header text-center mb-5">
+            <h2 class="display-5 fw-bold" style="color: var(--olive);">About Be Nice</h2>
+            <p class="text-muted">Made by <strong>Takwa Reda</strong></p>
+        </div>
+        
+        <div class="row align-items-center g-5">
+            <div class="col-md-6 text-center">
+                <img src="WhatsApp Image 2026-01-16 at 5.53.25 PM.jpeg" alt="Be Nice Logo" class="img-fluid rounded-circle shadow-lg" style="max-height: 300px; border: 5px solid var(--cream);">
+            </div>
+            <div class="col-md-6">
+                <h3 class="fw-bold mb-4">Our Story</h3>
+                <p class="lead text-secondary" style="line-height: 1.8;">
+                    Welcome to <strong>Be Nice</strong> Official Store. We are dedicated to providing the latest trends in high-quality shoes, fashion, and home wear. Our collections are carefully selected to ensure you look elegant and feel comfortable every single day.
+                </p>
+                <p class="text-secondary">
+                    We believe that style should be accessible to everyone, which is why we offer premium products at affordable prices with fast delivery to your doorstep.
+                </p>
+                
+                <div class="row mt-4 g-3 text-center">
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background-color: var(--cream);">
+                            <div class="h5 fw-bold mb-0">100%</div>
+                            <small class="text-muted">Quality</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background-color: var(--cream);">
+                            <div class="h5 fw-bold mb-0">Fast</div>
+                            <small class="text-muted">Shipping</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-3 rounded-3" style="background-color: var(--cream);">
+                            <div class="h5 fw-bold mb-0">Best</div>
+                            <small class="text-muted">Prices</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-5 pt-3 border-top text-end">
+                    <p class="fst-italic text-muted">Created by <span style="color: var(--olive); font-weight: bold;">Takwa Reda</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
