@@ -83,33 +83,43 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // جلب بيانات المنتج من localStorage
     const p = JSON.parse(localStorage.getItem('selectedProduct'));
-    if(!p) window.location.href='index.html';
+    if (!p) window.location.href = 'index.html';
 
-    // تعبئة البيانات في الصفحة
     document.getElementById('pName').innerText = p.name;
     document.getElementById('pPrice').innerText = p.price + " EGP";
-    document.getElementById('pDesc').innerText = p.desc;
-    document.getElementById('pSizes').innerText = p.sizes;
-    document.getElementById('pColours').innerText = p.colours;
+    document.getElementById('pDesc').innerText = p.desc || "No description available.";
     
-    // تحميل صور السلايدر ديناميكياً
-    const sliderContainer = document.getElementById('sliderItems');
-    if (p.imgList && p.imgList.length > 0) {
-        p.imgList.forEach((img, i) => {
-            if(img && img.trim() !== "") {
-                sliderContainer.innerHTML += `
-                    <div class="carousel-item ${i===0?'active':''}">
-                        <img src="${img}" alt="Product Image">
-                    </div>`;
-            }
-        });
+    // إظهار السعر القديم إذا كان متاحاً (للعروض)
+    const oldPriceArea = document.getElementById('pOldPrice');
+    if (oldPriceArea && p.oldPrice) {
+        oldPriceArea.innerText = p.oldPrice + " EGP";
+        oldPriceArea.style.display = "inline";
     }
 
-    // تجهيز رابط الواتساب مع رسالة الطلب
-    const msg = `Hello Be Nice Store! I want to order this item:\n\nProduct: ${p.name}\nPrice: ${p.price} EGP\n\nPlease confirm availability.`;
-    document.getElementById('waLink').href = `https://wa.me/201558189590?text=${encodeURIComponent(msg)}`;
+    // إظهار المقاسات والألوان
+    document.getElementById('pSizes').innerText = p.sizes || "One Size";
+    document.getElementById('pColours').innerText = p.colours || "Default Color";
+
+    // عرض الصورة الرئيسية في السلايدر
+    const sliderContainer = document.getElementById('sliderItems');
+    if (p.mainImg) {
+        sliderContainer.innerHTML = `
+            <div class="carousel-item active">
+                <img src="${p.mainImg}" class="d-block w-100" style="height: 450px; object-fit: cover;" alt="${p.name}">
+            </div>`;
+    }
+
+    // تجهيز رابط الواتساب ليشمل كل التفاصيل
+    function sendOrder() {
+        const msg = `Hello Be Nice Store!\n\nI want to order:\n*Product:* ${p.name}\n*Price:* ${p.price} EGP\n*Size:* ${p.sizes}\n*Color:* ${p.colours}\n\nPlease confirm availability.`;
+        window.open(`https://wa.me/201558189590?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+    
+    // ربط الزر بالدالة
+    const waBtn = document.getElementById('waLink');
+    if(waBtn) waBtn.onclick = sendOrder;
 </script>
 </body>
 </html>
+
